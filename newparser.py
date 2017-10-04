@@ -14,7 +14,6 @@ class minijpgparser():
 		self.createimage()
 		self.printimage()
 
-
 	def confirmminijpg(self):
 		if self.minijpgstr[:8] != "Mini-PNG":
 			raise NameError("Not a MiniPng file")
@@ -74,11 +73,38 @@ class minijpgparser():
 		return newstartbloc
 
 	def createimage(self):
+		if not hasattr(self, "hauteur") or not hasattr(self, "largeur"): #if it doesn't have an attribute, just choose
+			self.largeur = 8 #8 and the data length as the dimensions
+			self.hauteur = len(self.Dcont)
 		finalimage = [[0 for i in range(self.largeur)] for j in range(self.hauteur)]
-		print self.largeur, self.hauteur, len(self.Dcont)
-		if self.largeur*self.hauteur != 8*len(self.Dcont):
-			raise NameError("Incorrect dimensions")
+		if not self.Dcont: #if no data is defined, just return the black matrix
+			self.finalimage = finalimage
+			return
 		else:
+			if self.largeur*self.hauteur < 8*len(self.Dcont): #if I can complete the image by adding rows or columns, I do it
+				diff = 8*len(self.Dcont) - self.largeur*self.hauteur #if not, I use 8 and the data length as the dimensions
+				if diff % self.largeur == 0:
+					toadd = diff/self.largeur
+					self.hauteur += toadd
+					finalimage = [[0 for i in range(self.largeur)] for j in range(self.hauteur)]
+				elif diff % self.hauteur == 0:
+					toadd = diff/self.hauteur
+					self.largeur += toadd
+					finalimage = [[0 for i in range(self.largeur)] for j in range(self.hauteur)]
+				else:
+					self.largeur = 8
+					self.hauteur = len(self.Dcont)
+					finalimage = [[0 for i in range(self.largeur)] for j in range(self.hauteur)]
+			elif self.largeur*self.hauteur > 8*len(self.Dcont): #if I can create the correct image size by adding rows or columns,
+				diff = self.largeur*self.hauteur - 8*len(self.Dcont) #I do it, if not, I just leave it as it is
+				if diff % self.largeur == 0:
+					toremove = diff/self.largeur
+					self.hauteur -= toremove
+					finalimage = [[0 for i in range(self.largeur)] for j in range(self.hauteur)]
+				elif diff % self.hauteur == 0:
+					toremove = diff/self.hauteur
+					self.largeur -= toremove
+					finalimage = [[0 for i in range(self.largeur)] for j in range(self.hauteur)]
 			allbits = ""
 			for c in self.Dcont:
 				auxbin = bin(ord(c))[2:]
@@ -93,6 +119,7 @@ class minijpgparser():
 					finalimage[i][j] = allbits[cont]
 					cont += 1
 			self.finalimage = finalimage
+			return
 
 	def printimage(self):
 		for line in self.finalimage:
