@@ -1,4 +1,4 @@
-minipng = open('./minipngimages/A.mp', 'r')
+minipng = open('./uneven-dimensions.mp', 'r')
 ministr = minipng.read()
 
 if ministr[:9] != "Mini-PNGH":

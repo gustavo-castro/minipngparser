@@ -3,11 +3,14 @@ class minijpgparser():
 		with open(filelink, "r") as openfile:
 			self.minijpgstr = openfile.read()
 		self.confirmminijpg()
-		self.doneH, self.doneC, self.doneD = 0, 0, 0
-		startbloc1 = 8
-		startbloc2 = self.whichblock(startbloc1)
-		startbloc3 = self.whichblock(startbloc2)
-		anything = self.whichblock(startbloc3)
+		self.doneH = 0
+		self.Ccont, self.Dcont = "", ""
+		thisblock = 8
+		while thisblock != len(self.minijpgstr):
+			thisblock = self.teststartbloc(thisblock)
+			thisblock = self.whichblock(thisblock)
+		if self.Ccont:
+			print self.Ccont
 		self.createimage()
 		self.printimage()
 
@@ -42,8 +45,7 @@ class minijpgparser():
 		for i in range(4):
 			Clen += 10**(3 - i)*ord(self.minijpgstr[startindex+i])
 		Ccont = self.minijpgstr[startindex+4:startindex+4+Clen]
-		self.Ccont = Ccont
-		print self.Ccont
+		self.Ccont += Ccont
 		newstartindex = startindex+4+Clen
 		return newstartindex
 
@@ -53,18 +55,18 @@ class minijpgparser():
 		for i in range(4):
 			Dlen += 10**(3 - i)*ord(self.minijpgstr[startindex+i])
 		startindex = startindex + 4
-		self.Dcont = self.minijpgstr[startindex:startindex+Dlen]
-		newstartindex = startindex + Dlen + 4
+		self.Dcont += self.minijpgstr[startindex:startindex+Dlen]
+		newstartindex = startindex + Dlen
 		return newstartindex
 
 	def whichblock(self, startbloc):
 		if self.minijpgstr[startbloc] == "H" and not self.doneH:
 			newstartbloc = self.calcH(startbloc)
 			self.doneH = 1
-		elif self.minijpgstr[startbloc] == "C" and not self.doneC:
+		elif self.minijpgstr[startbloc] == "C":
 			newstartbloc = self.calcC(startbloc)
 			self.doneC = 1
-		elif self.minijpgstr[startbloc] == "D" and not self.doneD:
+		elif self.minijpgstr[startbloc] == "D":
 			newstartbloc = self.calcD(startbloc)
 			self.doneD = 1
 		else:
@@ -73,6 +75,7 @@ class minijpgparser():
 
 	def createimage(self):
 		finalimage = [[0 for i in range(self.largeur)] for j in range(self.hauteur)]
+		print self.largeur, self.hauteur, len(self.Dcont)
 		if self.largeur*self.hauteur != 8*len(self.Dcont):
 			raise NameError("Incorrect dimensions")
 		else:
@@ -94,6 +97,11 @@ class minijpgparser():
 	def printimage(self):
 		for line in self.finalimage:
 			print "".join(map(lambda x:" " if x=="1" else "X", line))
+
+	def teststartbloc(self, startbloc):
+		while startbloc < len(self.minijpgstr) and self.minijpgstr[startbloc] not in ["H", "C", "D"]:
+			startbloc += 1
+		return startbloc
 
 def main():
 	filelink = raw_input("Type here the minipng file you want to parse: \n")
