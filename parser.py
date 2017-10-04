@@ -1,4 +1,4 @@
-minipng = open('A.mp', 'r')
+minipng = open('./minipngimages/A.mp', 'r')
 ministr = minipng.read()
 
 if ministr[:9] != "Mini-PNGH":
@@ -48,21 +48,3 @@ else:
 				cont += 1
 		for line in finalimage:
 			print "".join(map(lambda x:" " if x=="1" else "X", line))
-
-"""
-class minijpgparser(filelink):
-	def __init__(self, filelink):
-		with open(filelink, "r") as openfile:
-			self.minijpgstr = openfile.read()
-		self.largeur = 10
-		self.hauteur = 10
-
-	def confirmminijpg(self):
-		if self.minijpgstr[:8] == "Mini-PNG":
-			return 1
-		else:
-			return 0
-
-	def findH(self):
-		if self.minijpgstr[9] == "H":
-"""
