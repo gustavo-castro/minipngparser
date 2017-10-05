@@ -1,6 +1,6 @@
 minipng = open('./minipngimages/2/wrong-magic.mp', 'r')
 ministr = minipng.read()
-
+# bytes = ['\xff', '\x8e', '\xed', '\xfa', '7', 'q', '\xff'] for letter G image
 if ministr[:9] != "Mini-PNGH":
 	print "deu ruim"
 else:

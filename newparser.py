@@ -125,7 +125,7 @@ class minijpgparser():
 		for line in self.finalimage:
 			print "".join(map(lambda x:" " if x=="1" else "X", line))
 
-	def teststartbloc(self, startbloc):
+	def teststartbloc(self, startbloc): #here I just keep going until I find a block, I could also raise an error
 		while startbloc < len(self.minijpgstr) and self.minijpgstr[startbloc] not in ["H", "C", "D"]:
 			startbloc += 1
 		return startbloc
