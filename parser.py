@@ -7,13 +7,17 @@ class minijpgparser():
 			self.minijpgstr = openfile.read()
 		self.confirmminijpg()
 		self.doneH = 0
-		self.Ccont, self.Dcont = "", ""
+		self.Ccont, self.Dcont, self.Pcont = "", "", ""
 		thisblock = 8
 		while thisblock != len(self.minijpgstr):
 			thisblock = self.teststartbloc(thisblock)
 			thisblock = self.whichblock(thisblock)
 		if self.Ccont:
 			print self.Ccont
+		if self.Pcont:
+			self.findpalette()
+		if not self.Dcont and not self.largeur:
+			raise ("There's no data and no header in the file")
 		if not hasattr(self, "Htype"): #if there's no type, the type will be black and white
 			self.Htype = 0
 			print "No header was found, the parser will assume the pixel type is black and white"
@@ -65,16 +69,36 @@ class minijpgparser():
 		newstartindex = startindex + Dlen
 		return newstartindex
 
+	def calcP(self, startindex):
+		startindex += 1
+		Plen = 0
+		for i in range(4):
+			Plen += 10**(3 - i)*ord(self.minijpgstr[startindex+i])
+		startindex = startindex + 4
+		self.Pcont += self.minijpgstr[startindex:startindex+Plen]
+		newstartindex = startindex + Plen
+		return newstartindex
+
+	def findpalette(self):
+		ordPcont = map(ord, self.Pcont)
+		self.palette = [[ordPcont[i], ordPcont[i+1], ordPcont[i+2]] for i in range(0, len(ordPcont), 3)]
+		print self.palette
+		if len(self.palette) > 256:
+			raise NameError("Palette is too large")
+
 	def whichblock(self, startbloc):
-		if self.minijpgstr[startbloc] == "H" and not self.doneH:
-			newstartbloc = self.calcH(startbloc)
-			self.doneH = 1
+		if self.minijpgstr[startbloc] == "H":
+			if not self.doneH:
+				newstartbloc = self.calcH(startbloc)
+				self.doneH = 1
+			else:
+				raise NameError("More than one header")
 		elif self.minijpgstr[startbloc] == "C":
 			newstartbloc = self.calcC(startbloc)
-			self.doneC = 1
 		elif self.minijpgstr[startbloc] == "D":
 			newstartbloc = self.calcD(startbloc)
-			self.doneD = 1
+		elif self.minijpgstr[startbloc] == "P":
+			newstartbloc = self.calcP(startbloc)
 		else:
 			raise NameError("File not structured correctly")
 		return newstartbloc
@@ -109,13 +133,13 @@ class minijpgparser():
 					self.largeur -= toremove
 			self.finalimage = [[0 for i in range(self.largeur)] for j in range(self.hauteur)]
 			return
-		elif self.Htype == 1: # still have to fix problematic cases as with 1
+		elif self.Htype == 1: # just leave the data as it is
 			self.finalimage = [[0 for i in range(self.largeur)] for j in range(self.hauteur)]
 			return
-		elif self.Htype == 2: # still have to fix problematic cases as with 1
+		elif self.Htype == 2: # just leave the data as it is
 			self.finalimage = [[0 for i in range(self.largeur)] for j in range(self.hauteur)]
 			return
-		elif self.Htype == 3: # still have to fix problematic cases as with 1
+		elif self.Htype == 3: # just leave the data as it is
 			self.finalimage = [[[0,0,0] for i in range(self.largeur)] for j in range(self.hauteur)]
 			return
 		else:
@@ -144,18 +168,27 @@ class minijpgparser():
 			allbytes = map(ord, self.Dcont)
 			cont = 0
 			for i in range(self.hauteur):
-				for j in range(allbytes):
+				for j in range(self.largeur):
 					if cont < len(self.Dcont): #if we reached the end of data, just leave 0's
 						self.finalimage[i][j] = allbytes[cont]
 						cont += 1
 					else:
 						break
+			return
 		elif self.Htype == 2:
-			raise NameError("Not implemented yet")
+			allbytes = map(ord, self.Dcont)
+			cont = 0
+			for i in range(self.hauteur):
+				for j in range(self.largeur):
+					if cont < len(allbytes): #if we reached the end of data, just leave 0's
+						self.finalimage[i][j] = self.palette[allbytes[cont]]
+						cont += 1
+					else:
+						break
+			return
 		elif self.Htype == 3:
 			ordDcont = map(ord, self.Dcont)
 			rgb = [[ordDcont[i], ordDcont[i+1], ordDcont[i+2]] for i in range(0, len(ordDcont), 3)]
-			print rgb, self.finalimage
 			cont = 0
 			for i in range(self.hauteur):
 				for j in range(self.largeur):
@@ -164,6 +197,7 @@ class minijpgparser():
 						cont += 1
 					else:
 						break
+			return
 		else:
 			raise NameError("Non existent pixel type")
 
@@ -177,26 +211,24 @@ class minijpgparser():
 			plt.imshow(self.finalimage, cmap="gray")
 			plt.show()
 			return
-		elif self.Htype == 2:
-			raise NameError("Not implemented yet")
-		elif self.Htype == 3:
+		elif self.Htype in [2,3]:
 			aux = np.array(self.finalimage)
 			aux = aux.astype(np.uint8)
-			print aux
 			plt.imshow(aux)
 			plt.show()
 			return
 		else:
 			raise NameError("Non existent pixel type")
 
-	def teststartbloc(self, startbloc): #here I just keep going until I find a block, I could also raise an error
-		while startbloc < len(self.minijpgstr) and self.minijpgstr[startbloc] not in ["H", "C", "D"]:
-			startbloc += 1
-		return startbloc
+	def teststartbloc(self, startbloc): # here I raise an error if the letter after a block ended doesn't start another blcok
+		if startbloc < len(self.minijpgstr) and self.minijpgstr[startbloc] not in ["H", "C", "D", "P"]:
+			raise NameError("deu ruim")
+			#startbloc += 1
+		return
 
 def main():
 	filelink = raw_input("Type here the minipng file you want to parse: \n")
 	parsedimage = minijpgparser(filelink)
-	return
+	return 	
 
 main()

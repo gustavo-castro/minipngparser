@@ -1,0 +1,12 @@
+- When no header is found, the parser will assume the pixel type is black and white
+- When no data is found, the parser will print the black image with the dimensions described in the header
+- If there's no data nor header, an error will be raised
+- If the file does not start with the exact string "Mini-PNG", it will not be parsed
+- If more than a header is declared, the parser will raise an error
+- If the palette contains more than 256 colors, it will raise an error
+- For the black and white images, if the dimensions don't match the data size, I adjust them as described in the code
+- For other pixel types, if the dimensions don't match the data, I will create the image with the described dimensions, 
+and fill the data as possible (possibly leaving black pixels in the end, or not using the whole data if doesn't match the
+dimenions)
+- I test if the blocks follow their descriptions by only seeking for their data exactly in the lengths they described, at the end,
+if there's no block starting after them, I raise an error
