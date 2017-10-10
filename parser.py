@@ -35,13 +35,13 @@ class minijpgparser():
 		startindex += 1
 		Hlen = 0
 		for i in range(4):
-			Hlen += 10**(3 - i)*ord(self.minijpgstr[startindex+i])
+			Hlen += 256**(3 - i)*ord(self.minijpgstr[startindex+i])
 		Hcont = self.minijpgstr[startindex+4:startindex+4+Hlen]
 		Hcont_larg = 0
 		Hcont_haut = 0
 		for i in range(4):
-			Hcont_larg += 10**(3 - i)*ord(Hcont[i])
-			Hcont_haut += 10**(3 - i)*ord(Hcont[4+i])
+			Hcont_larg += 256**(3 - i)*ord(Hcont[i])
+			Hcont_haut += 256**(3 - i)*ord(Hcont[4+i])
 		self.Htype = ord(Hcont[-1])
 		self.largeur, self.hauteur = Hcont_larg, Hcont_haut
 		printdict = {0:"noir et blanc", 1:"niveaux de gris", 2:"palette", 3:"coleurs 24 bits"}
@@ -53,7 +53,7 @@ class minijpgparser():
 		startindex += 1
 		Clen = 0
 		for i in range(4):
-			Clen += 10**(3 - i)*ord(self.minijpgstr[startindex+i])
+			Clen += 256**(3 - i)*ord(self.minijpgstr[startindex+i])
 		Ccont = self.minijpgstr[startindex+4:startindex+4+Clen]
 		self.Ccont += Ccont
 		newstartindex = startindex+4+Clen
@@ -63,7 +63,7 @@ class minijpgparser():
 		startindex += 1
 		Dlen = 0
 		for i in range(4):
-			Dlen += 10**(3 - i)*ord(self.minijpgstr[startindex+i])
+			Dlen += 256**(3 - i)*ord(self.minijpgstr[startindex+i])
 		startindex = startindex + 4
 		self.Dcont += self.minijpgstr[startindex:startindex+Dlen]
 		newstartindex = startindex + Dlen
@@ -73,7 +73,7 @@ class minijpgparser():
 		startindex += 1
 		Plen = 0
 		for i in range(4):
-			Plen += 10**(3 - i)*ord(self.minijpgstr[startindex+i])
+			Plen += 256**(3 - i)*ord(self.minijpgstr[startindex+i])
 		startindex = startindex + 4
 		self.Pcont += self.minijpgstr[startindex:startindex+Plen]
 		newstartindex = startindex + Plen
@@ -124,47 +124,43 @@ class minijpgparser():
 						auxbin = "0" + auxbin
 				allbits += auxbin
 			cont = 0
+			if len(allbits) < self.hauteur*self.largeur:
+				raise NameError("Incorrect dimensions")
 			for i in range(self.hauteur):
 				for j in range(self.largeur):
-					if cont < len(allbits): #if we reached the end of data, just leave 0's
-						self.finalimage[i][j] = allbits[cont]
-						cont += 1
-					else:
-						break
+					self.finalimage[i][j] = allbits[cont]
+					cont += 1
 			return
 		elif self.Htype == 1:
 			allbytes = map(ord, self.Dcont)
 			cont = 0
+			if len(self.Dcont) < self.hauteur*self.largeur:
+				raise NameError("Incorrect dimensions")
 			for i in range(self.hauteur):
 				for j in range(self.largeur):
-					if cont < len(self.Dcont): #if we reached the end of data, just leave 0's
-						self.finalimage[i][j] = allbytes[cont]
-						cont += 1
-					else:
-						break
+					self.finalimage[i][j] = allbytes[cont]
+					cont += 1
 			return
 		elif self.Htype == 2:
 			allbytes = map(ord, self.Dcont)
 			cont = 0
+			if len(allbytes) < self.hauteur*self.largeur:
+				raise NameError("Incorrect dimensions")
 			for i in range(self.hauteur):
 				for j in range(self.largeur):
-					if cont < len(allbytes): #if we reached the end of data, just leave 0's
-						self.finalimage[i][j] = self.palette[allbytes[cont]]
-						cont += 1
-					else:
-						break
+					self.finalimage[i][j] = self.palette[allbytes[cont]]
+					cont += 1
 			return
 		elif self.Htype == 3:
 			ordDcont = map(ord, self.Dcont)
 			rgb = [[ordDcont[i], ordDcont[i+1], ordDcont[i+2]] for i in range(0, len(ordDcont), 3)]
 			cont = 0
+			if len(rgb) < self.hauteur*self.largeur:
+				raise NameError("Incorrect dimensions")
 			for i in range(self.hauteur):
 				for j in range(self.largeur):
-					if cont < len(rgb): #if we reached the end of data, just leave 0's
-						self.finalimage[i][j] = rgb[cont]
-						cont += 1
-					else:
-						break
+					self.finalimage[i][j] = rgb[cont]
+					cont += 1
 			return
 		else:
 			raise NameError("Non existent pixel type")

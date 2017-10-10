@@ -1,10 +1,12 @@
+Gustavo Pereira de Castro
+
 - When no header is found, the parser will raise an error
 - When no data is found, the parser will raise an error
 - If the file does not start with the exact string "Mini-PNG", the parser will raise an error
 - If more than a header is declared, the parser will raise an error
 - If the palette contains more than 256 colors, the parser will raise an error
-- If the dimensions don't match the data, I will create the image with the described dimensions, 
-and fill the data as possible (possibly leaving black pixels in the end, or not using the whole data if doesn't match the
-dimenions)
+- If the dimensions represent an image that has less pixels than the file's data, I fill the image
+with the data until all the image is filled (some data will remain unused)
+- If the dimensions represent an image that has more pixels than the file's data, I raise an error 
 - I test if the blocks follow their descriptions by only seeking for their data exactly in the lengths they described, at the end,
 if there's no block starting after them, I raise an error
