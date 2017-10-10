@@ -10,17 +10,17 @@ class minijpgparser():
 		self.Ccont, self.Dcont, self.Pcont = "", "", ""
 		thisblock = 8
 		while thisblock != len(self.minijpgstr):
-			thisblock = self.teststartbloc(thisblock)
+			if thisblock > len(self.minijpgstr): # here I raise an error if the letter after a block ended doesn't start another blcok
+				raise NameError("Block size error")
 			thisblock = self.whichblock(thisblock)
 		if self.Ccont:
 			print self.Ccont
 		if self.Pcont:
 			self.findpalette()
-		if not self.Dcont and not self.largeur:
-			raise ("There's no data and no header in the file")
-		if not hasattr(self, "Htype"): #if there's no type, the type will be black and white
-			self.Htype = 0
-			print "No header was found, the parser will assume the pixel type is black and white"
+		if not self.Dcont:
+			raise NameError("There's no data in the file")
+		if not self.doneH:
+			raise NameError("There's no header in the file")
 		self.createimagematrix()
 		self.fillimagematrix()
 		self.printimage()
@@ -99,47 +99,15 @@ class minijpgparser():
 			newstartbloc = self.calcD(startbloc)
 		elif self.minijpgstr[startbloc] == "P":
 			newstartbloc = self.calcP(startbloc)
-		else:
+		else: # here I raise an error if the letter after a block ended doesn't start another blcok
 			raise NameError("File not structured correctly")
 		return newstartbloc
 
 	def createimagematrix(self):
-		if self.Htype == 0:
-			if not self.Dcont: #if no data is defined, just return the black matrix
-				self.finalimage = [[0 for i in range(self.largeur)] for j in range(self.hauteur)]
-				print "No data was found, the black matrix of the specified dimensions will be printed"
-				return
-			if not hasattr(self, "hauteur") or not hasattr(self, "largeur"): #if it doesn't have an attribute, just choose
-				self.largeur = 8 #8 and the data length as the dimensions
-				self.hauteur = len(self.Dcont)
-			elif self.largeur*self.hauteur < 8*len(self.Dcont): #if I can complete the image by adding rows or columns, I do it
-				diff = 8*len(self.Dcont) - self.largeur*self.hauteur #if not, I use 8 and the data length as the dimensions
-				if diff % self.largeur == 0:
-					toadd = diff/self.largeur
-					self.hauteur += toadd
-				elif diff % self.hauteur == 0:
-					toadd = diff/self.hauteur
-					self.largeur += toadd
-				else:
-					self.largeur = 8
-					self.hauteur = len(self.Dcont)
-			elif self.largeur*self.hauteur > 8*len(self.Dcont): #if I can create the correct image size by adding rows or columns,
-				diff = self.largeur*self.hauteur - 8*len(self.Dcont) #I do it, if not, I just leave it as it is
-				if diff % self.largeur == 0:
-					toremove = diff/self.largeur
-					self.hauteur -= toremove
-				elif diff % self.hauteur == 0:
-					toremove = diff/self.hauteur
-					self.largeur -= toremove
+		if self.Htype in [0,1,2]:
 			self.finalimage = [[0 for i in range(self.largeur)] for j in range(self.hauteur)]
 			return
-		elif self.Htype == 1: # just leave the data as it is
-			self.finalimage = [[0 for i in range(self.largeur)] for j in range(self.hauteur)]
-			return
-		elif self.Htype == 2: # just leave the data as it is
-			self.finalimage = [[0 for i in range(self.largeur)] for j in range(self.hauteur)]
-			return
-		elif self.Htype == 3: # just leave the data as it is
+		elif self.Htype == 3:
 			self.finalimage = [[[0,0,0] for i in range(self.largeur)] for j in range(self.hauteur)]
 			return
 		else:
@@ -219,12 +187,6 @@ class minijpgparser():
 			return
 		else:
 			raise NameError("Non existent pixel type")
-
-	def teststartbloc(self, startbloc): # here I raise an error if the letter after a block ended doesn't start another blcok
-		if startbloc < len(self.minijpgstr) and self.minijpgstr[startbloc] not in ["H", "C", "D", "P"]:
-			raise NameError("deu ruim")
-			#startbloc += 1
-		return
 
 def main():
 	filelink = raw_input("Type here the minipng file you want to parse: \n")
